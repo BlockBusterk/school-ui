@@ -1,6 +1,8 @@
 import { GetServerSideProps } from "next";
 import Link from "next/link";
 import { ChangeEvent, useState } from "react";
+import createApolloClient from "../../../lib/apollo-client";
+import { gql } from "@apollo/client";
 
 type Class = {
   id: string;
@@ -10,35 +12,56 @@ type Class = {
 type Props = {
   classes: Class[];
 };
-
-export const getServerSideProps: GetServerSideProps = async () => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/classes`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
-        "Content-Type": "application/json",
-      },
+          //{Graphql}
+const GET_ALL_CLASSES = gql`
+  query GetAllClasses {
+    getAllClasses {
+      id
+      name
     }
-  );
-
-  if (!res.ok) {
-    console.error(`Failed to fetch students: ${res.statusText}`);
-    return {
-      props: { students: [] },
-    };
   }
-
-  const data = await res.json();
-  const classes = Array.isArray(data.data.classes)
-    ? data.data.classes
-    : data.data.classes || [];
+`;
+export async function getServerSideProps() {
+  const client = createApolloClient();
+  const { data } = await client.query({
+    query: GET_ALL_CLASSES,
+  });
 
   return {
-    props: { classes },
+    props: {
+      classes: data.getAllClasses,
+    },
   };
-};
+}
+                  //{Rest}
+// export const getServerSideProps: GetServerSideProps = async () => {
+//   const res = await fetch(
+//     `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/classes`,
+//     {
+//       method: "GET",
+//       headers: {
+//         Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
+//         "Content-Type": "application/json",
+//       },
+//     }
+//   );
+
+//   if (!res.ok) {
+//     console.error(`Failed to fetch students: ${res.statusText}`);
+//     return {
+//       props: { students: [] },
+//     };
+//   }
+
+//   const data = await res.json();
+//   const classes = Array.isArray(data.data.classes)
+//     ? data.data.classes
+//     : data.data.classes || [];
+
+//   return {
+//     props: { classes },
+//   };
+// };
 
 const ClassList: React.FC<Props> = ({ classes}) => {
 const [displayClass, setDisplayClass] = useState(classes)

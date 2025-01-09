@@ -1,5 +1,7 @@
+import { gql, useQuery } from "@apollo/client";
 import { GetStaticPaths, GetStaticProps } from "next";
 import { useState } from "react";
+import createApolloClient from "../../../lib/apollo-client";
 
 type Student = {
   id: string;
@@ -10,23 +12,48 @@ type Student = {
 type Props = {
   student: Student;
 };
+      //{Graphql}
+const GET_ALL_STUDENTS = gql`
+  query GetAllStudents {
+    getAllStudents {
+      id
+      name
+      classId
+    }
+  }
+`;
+
+const GET_STUDENT_BY_ID = gql`
+  query GetStudentById($id: String!) {
+    getStudentById(id:$id) {
+      id
+      name
+      classId
+    }
+  }
+`;
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/students`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
-  const data = await res.json();
-  const students = Array.isArray(data.data.students)
-    ? data.data.students
-    : data.data.students || [];
-
+  const client = createApolloClient();
+  const { data } = await client.query({
+    query: GET_ALL_STUDENTS,
+  });
+          //{Rest}
+  // const res = await fetch(
+  //   `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/students`,
+  //   {
+  //     method: "GET",
+  //     headers: {
+  //       Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
+  //       "Content-Type": "application/json",
+  //     },
+  //   }
+  // );
+  // const data = await res.json();
+  // const students = Array.isArray(data.data.students)
+  //   ? data.data.students
+  //   : data.data.students || [];
+  const students = data.getAllStudents
   const paths = students.map((student: Student) => ({
     params: { id: student.id.toString() },
   }));
@@ -34,19 +61,26 @@ export const getStaticPaths: GetStaticPaths = async () => {
 };
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/students/${params?.id}`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
-  const data = await res.json();
-  const student = data.data.student;
-  console.log("student", data.data.student);
+  const client = createApolloClient();
+  const { data } = await client.query({
+    query: GET_STUDENT_BY_ID,
+    variables: {id: params!.id}
+  });
+  //      {Rest}
+  // const res = await fetch(
+  //   `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/students/${params?.id}`,
+  //   {
+  //     method: "GET",
+  //     headers: {
+  //       Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
+  //       "Content-Type": "application/json",
+  //     },
+  //   }
+  // );
+  // const data = await res.json();
+  // const student = data.data.student;
+  // console.log("student", data.data.student);
+  const student = data.getStudentById
   return {
     props: { student },
     revalidate: 10, // ISR
@@ -60,7 +94,6 @@ const handleSubmit = async (
   classId: string
 ) => {
   e.preventDefault();
-  console.log("Authorization Header:", `Bearer ${process.env.BearerToken}`);
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/students/${id}`,
     {

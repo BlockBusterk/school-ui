@@ -1,29 +1,60 @@
+import { gql } from "@apollo/client";
 import { useRouter } from "next/router";
 import { useState } from "react";
+import createApolloClient from "../../../lib/apollo-client";
 
 export default function RegisterStudent() {
   const [name, setName] = useState("");
   const [classId, setClassId] = useState("");
   const router = useRouter();
-
+  interface CreateStudentInput {
+    name: string;
+    classId: string;
+  }
+  const CREATE_STUDENT = gql`
+      mutation CreateStudent($createStudentInput: CreateStudentInput!){
+            createStudent(createStudentInput: $createStudentInput){
+              id,
+              name,
+              classId
+            }
+      }
+  `
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/students`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, classId }),
-      }
-    );
-    if (!res.ok) {
-      alert("Error registering student");
-      console.error("Error: ", res);
-      return;
+    const createStudentInput = {
+      name,
+      classId
     }
+    try {
+      const client = createApolloClient(); 
+      const { data } = await client.mutate({
+        mutation: CREATE_STUDENT,
+        variables: { createStudentInput }, 
+      });
+  
+      console.log("Student created:", data.createStudent);
+    } catch (error) {
+      console.error("Error creating student:", error);
+      return
+    }
+          //{Rest}
+    // const res = await fetch(
+    //   `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/students`,
+    //   {
+    //     method: "POST",
+    //     headers: {
+    //       Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify({ name, classId }),
+    //   }
+    // );
+    // if (!res.ok) {
+    //   alert("Error registering student");
+    //   console.error("Error: ", res);
+    //   return;
+    // }
     alert("Student Registered!");
     setName("");
     setClassId("");

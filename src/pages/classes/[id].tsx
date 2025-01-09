@@ -1,5 +1,7 @@
+import { gql } from "@apollo/client";
 import { GetStaticPaths, GetStaticProps } from "next";
 import { useState } from "react";
+import createApolloClient from "../../../lib/apollo-client";
 
 type Class = {
   id: string;
@@ -9,23 +11,46 @@ type Class = {
 type Props = {
   classE: Class;
 };
+ //{Graphql}
+const GET_ALL_CLASSES = gql`
+  query GetAllClasses {
+    getAllClasses {
+      id
+      name
+    }
+  }
+`;
+
+const GET_CLASS_BY_ID = gql`
+  query GetClassById($id: String!) {
+    getClassById(id:$id) {
+      id
+      name
+    }
+  }
+`;
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/classes`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
-  const data = await res.json();
-  const classes = Array.isArray(data.data.classes)
-    ? data.data.classes
-    : data.data.classes || [];
-
+  const client = createApolloClient();
+  const { data } = await client.query({
+    query: GET_ALL_CLASSES,
+  });
+        //{REST}
+  // const res = await fetch(
+  //   `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/classes`,
+  //   {
+  //     method: "GET",
+  //     headers: {
+  //       Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
+  //       "Content-Type": "application/json",
+  //     },
+  //   }
+  // );
+  // const data = await res.json();
+  // const classes = Array.isArray(data.data.classes)
+  //   ? data.data.classes
+  //   : data.data.classes || [];
+  const classes = data.getAllClasses
   const paths = classes.map((classE: Class) => ({
     params: { id: classE.id.toString() },
   }));
@@ -33,18 +58,25 @@ export const getStaticPaths: GetStaticPaths = async () => {
 };
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/classes/${params?.id}`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
-  const data = await res.json();
-  const classE = data.data.class;
+  const client = createApolloClient();
+  const { data } = await client.query({
+    query: GET_CLASS_BY_ID,
+    variables: {id: params!.id}
+  });
+  //      {REST}
+  // const res = await fetch(
+  //   `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/classes/${params?.id}`,
+  //   {
+  //     method: "GET",
+  //     headers: {
+  //       Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
+  //       "Content-Type": "application/json",
+  //     },
+  //   }
+  // );
+  // const data = await res.json();
+  // const classE = data.data.class;
+  const classE = data.getClassById
   return {
     props: { classE },
     revalidate: 10, // ISR

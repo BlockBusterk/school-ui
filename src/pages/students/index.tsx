@@ -1,7 +1,8 @@
 import { GetServerSideProps } from "next";
 import Link from "next/link";
 import { ChangeEvent, useState } from "react";
-
+import { gql } from "@apollo/client";
+import createApolloClient from "../../../lib/apollo-client";
 type Student = {
   id: string;
   name: string;
@@ -11,35 +12,60 @@ type Student = {
 type Props = {
   students: Student[];
 };
-
-export const getServerSideProps: GetServerSideProps = async () => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/students`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
-        "Content-Type": "application/json",
-      },
+            //{Graphql}
+const GET_ALL_STUDENTS = gql`
+  query GetAllStudents {
+    getAllStudents {
+      id
+      name
+      classId
     }
-  );
-
-  if (!res.ok) {
-    console.error(`Failed to fetch students: ${res.statusText}`);
-    return {
-      props: { students: [] },
-    };
   }
+`;
 
-  const data = await res.json();
-  const students = Array.isArray(data.data.students)
-    ? data.data.students
-    : data.data.students || [];
+export async function getServerSideProps() {
+  const client = createApolloClient();
+  const { data } = await client.query({
+    query: GET_ALL_STUDENTS,
+  });
 
   return {
-    props: { students },
+    props: {
+      students: data.getAllStudents,
+    },
   };
-};
+}
+
+
+//        {Rest}
+// export const getServerSideProps: GetServerSideProps = async () => {
+//   const res = await fetch(
+//     `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/students`,
+//     {
+//       method: "GET",
+//       headers: {
+//         Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
+//         "Content-Type": "application/json",
+//       },
+//     }
+//   );
+
+//   if (!res.ok) {
+//     console.error(`Failed to fetch students: ${res.statusText}`);
+//     return {
+//       props: { students: [] },
+//     };
+//   }
+
+//   const data = await res.json();
+//   const students = Array.isArray(data.data.students)
+//     ? data.data.students
+//     : data.data.students || [];
+
+//   return {
+//     props: { students },
+//   };
+// };
 
 const StudentList: React.FC<Props> = ({ students }) => {
   const [searchType, setSearchType] = useState("search-name");

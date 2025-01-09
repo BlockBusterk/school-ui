@@ -1,28 +1,59 @@
+import { gql } from "@apollo/client";
 import { useRouter } from "next/router";
 import { useState } from "react";
+import createApolloClient from "../../../lib/apollo-client";
 
 export default function RegisterClass() {
   const [name, setName] = useState("");
   const router = useRouter();
+  interface CreateClassInput {
+    name: string;
+  }
 
+  const CREATE_CLASS = gql`
+        mutation CreateCLass($createClassInput: CreateClassInput!){
+              createClass(createClassInput: $createClassInput){
+                id,
+                name
+              }
+        }
+    `
+
+    
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/classes`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name }),
-      }
-    );
-    if (!res.ok) {
-      alert("Error registering class");
-      console.error("Error: ", res);
-      return;
+    const createClassInput = {
+      name
     }
+    try {
+      const client = createApolloClient(); 
+      const { data } = await client.mutate({
+        mutation: CREATE_CLASS,
+        variables: { createClassInput }, 
+      });
+  
+      console.log("Class created:", data.createClass);
+    } catch (error) {
+      console.error("Error creating class:", error);
+      return
+    }
+    //        {REST}
+    // const res = await fetch(
+    //   `${process.env.NEXT_PUBLIC_NEST_PUBLIC_API_BASE_URL}/classes`,
+    //   {
+    //     method: "POST",
+    //     headers: {
+    //       Authorization: `Bearer ${process.env.NEXT_PUBLIC_BearerToken}`,
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify({ name }),
+    //   }
+    // );
+    // if (!res.ok) {
+    //   alert("Error registering class");
+    //   console.error("Error: ", res);
+    //   return;
+    // }
     alert("Class Registered!");
     setName("");
     router.push("/classes");
